@@ -1,6 +1,6 @@
 # 🔄 This-to-That
 
-A local Streamlit app that translates mixed-language text (primarily Japanese → English) using OpenAI. Upload files or paste text — only the foreign-language parts get translated, everything else stays intact.
+A local Streamlit app that translates mixed-language text (primarily Japanese → English) using OpenAI. Upload files or paste text, only the foreign-language parts get translated, everything else stays intact.
 
 ## Architecture
 
