@@ -48,6 +48,10 @@ if "translation_source" not in st.session_state:
     st.session_state.translation_source = None  # str or dict
 if "dl_name" not in st.session_state:
     st.session_state.dl_name = ""
+if "multi_texts" not in st.session_state:
+    st.session_state.multi_texts = [""]  # list of text blocks
+if "input_mode" not in st.session_state:
+    st.session_state.input_mode = "single"
 
 # --- Sidebar ---
 with st.sidebar:
@@ -57,9 +61,6 @@ with st.sidebar:
     target_lang = st.selectbox("Translate to", LANGUAGES)
     model = st.selectbox("Model", ["gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo"])
     st.divider()
-    uploaded_files = st.file_uploader("Upload file(s)",
-                                      accept_multiple_files=True, key="files",
-                                      help="txt, json, csv, md, xml, etc.")
     if st.button("🗑️ Clear results", use_container_width=True):
         st.session_state.translation_result = None
         st.session_state.translation_source = None
@@ -116,42 +117,77 @@ def translate(text: str, lang: str, key: str, mdl: str) -> str:
 source_text = ""
 file_sources: list[tuple[str, str]] = []
 
-if uploaded_files:
-    for f in uploaded_files:
-        file_sources.append((f.name, read_file(f)))
+# --- Input mode selector ---
+input_mode = st.radio("Input mode", ["✏️ Single Text", "📝 Multi Text", "📁 Files"],
+                      horizontal=True, label_visibility="collapsed",
+                      index=["single", "multi", "files"].index(st.session_state.input_mode),
+                      key="mode_radio")
+
+if input_mode == "📁 Files":
+    st.session_state.input_mode = "files"
+elif input_mode == "📝 Multi Text":
+    st.session_state.input_mode = "multi"
+else:
+    st.session_state.input_mode = "single"
 
 # --- Main two-column layout ---
 left, right = st.columns(2, gap="medium")
 
 with left:
     st.markdown('<p class="panel-label">📄 ORIGINAL</p>', unsafe_allow_html=True)
-    if file_sources:
-        if len(file_sources) == 1:
-            source_text = file_sources[0][1]
-            st.text_area("input", source_text, height=280, label_visibility="collapsed",
-                         key="input_single_file")
-        else:
-            tabs = st.tabs([f.name for f in uploaded_files])
-            for i, tab in enumerate(tabs):
-                with tab:
-                    st.text_area("input", file_sources[i][1], height=280,
-                                 label_visibility="collapsed", key=f"input_file_{i}")
+
+    if st.session_state.input_mode == "files":
+        uploaded_files = st.file_uploader("Upload file(s)",
+                                          accept_multiple_files=True, key="files",
+                                          help="txt, json, csv, md, xml, etc.")
+        if uploaded_files:
+            for f in uploaded_files:
+                file_sources.append((f.name, read_file(f)))
+            if len(file_sources) == 1:
+                source_text = file_sources[0][1]
+                st.text_area("input", source_text, height=220, label_visibility="collapsed",
+                             key="input_single_file")
+            else:
+                tabs = st.tabs([name for name, _ in file_sources])
+                for i, tab in enumerate(tabs):
+                    with tab:
+                        st.text_area("input", file_sources[i][1], height=220,
+                                     label_visibility="collapsed", key=f"input_file_{i}")
+
+    elif st.session_state.input_mode == "multi":
+        # Dynamic multi-text blocks
+        for i in range(len(st.session_state.multi_texts)):
+            st.session_state.multi_texts[i] = st.text_area(
+                f"Text block {i + 1}", value=st.session_state.multi_texts[i],
+                height=120, key=f"multi_input_{i}",
+                placeholder=f"Text block {i + 1}...")
+        mc1, mc2 = st.columns(2)
+        with mc1:
+            if st.button("➕ Add block", use_container_width=True):
+                st.session_state.multi_texts.append("")
+                st.rerun()
+        with mc2:
+            if len(st.session_state.multi_texts) > 1:
+                if st.button("➖ Remove last", use_container_width=True):
+                    st.session_state.multi_texts.pop()
+                    st.rerun()
+
     else:
         source_text = st.text_area("input", height=280, label_visibility="collapsed",
                                    placeholder="Paste any text here...", key="input_paste")
 
 with right:
     st.markdown(f'<p class="panel-label">🌍 {target_lang.upper()}</p>', unsafe_allow_html=True)
-    # Show persisted result or empty placeholder
-    if st.session_state.translation_result and not file_sources:
-        st.text_area("output", value=st.session_state.translation_result, height=280,
-                     label_visibility="collapsed", key="output_persisted")
-    elif st.session_state.translation_result and isinstance(st.session_state.translation_result, dict):
+    # Show persisted result
+    if st.session_state.translation_result and isinstance(st.session_state.translation_result, dict):
         tabs_out = st.tabs(list(st.session_state.translation_result.keys()))
-        for i, (fname, trans) in enumerate(st.session_state.translation_result.items()):
+        for i, (label, trans) in enumerate(st.session_state.translation_result.items()):
             with tabs_out[i]:
                 st.text_area("out", trans, height=280,
                              label_visibility="collapsed", key=f"out_persist_{i}")
+    elif st.session_state.translation_result and isinstance(st.session_state.translation_result, str):
+        st.text_area("output", value=st.session_state.translation_result, height=280,
+                     label_visibility="collapsed", key="output_persisted")
     else:
         st.text_area("output", value="", height=280,
                      label_visibility="collapsed", disabled=True,
@@ -182,11 +218,30 @@ with btn_col2:
 if do_translate:
     if not api_key:
         st.error("⚠️ Enter your OpenAI API key in the sidebar.")
-    elif not source_text.strip() and not file_sources:
+    elif not source_text.strip() and not file_sources and st.session_state.input_mode != "multi":
         st.error("⚠️ Paste text or upload file(s) first.")
+    elif st.session_state.input_mode == "multi" and not any(t.strip() for t in st.session_state.multi_texts):
+        st.error("⚠️ Add some text to at least one block.")
     else:
+        # Multi-text blocks
+        if st.session_state.input_mode == "multi":
+            texts = [(f"Block {i+1}", t) for i, t in enumerate(st.session_state.multi_texts) if t.strip()]
+            results: dict[str, str] = {}
+            progress = st.progress(0, text="Translating...")
+            for i, (label, content) in enumerate(texts):
+                try:
+                    translated = translate(content, target_lang, api_key, model)
+                    results[label] = translated
+                except Exception as e:
+                    st.error(f"❌ {label}: {e}")
+                progress.progress((i + 1) / len(texts),
+                                  text=f"{i + 1}/{len(texts)} done")
+            st.session_state.translation_result = results
+            st.session_state.translation_lang = target_lang.lower()
+            st.rerun()
+
         # Multi-file
-        if file_sources and len(file_sources) > 1:
+        elif file_sources and len(file_sources) > 1:
             results: dict[str, str] = {}
             progress = st.progress(0, text="Translating...")
             for i, (fname, content) in enumerate(file_sources):
