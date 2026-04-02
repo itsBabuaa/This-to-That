@@ -1,83 +1,56 @@
-# 🔄 This-to-That
+# This-to-That
 
-A local Streamlit app that translates mixed-language text (primarily Japanese → English) using OpenAI. Upload files or paste text, only the foreign-language parts get translated, everything else stays intact.
+A local Streamlit app that translates text between languages. Supports mixed-language content (e.g. Japanese + English), file uploads, batch folder translation, and multiple translation engines.
 
-## Architecture
+## Features
 
-```mermaid
-graph TD
-    A[User] -->|Paste text / Upload files| B[Streamlit UI]
-    B --> C{Input Type}
-    C -->|Pasted Text| D[Single Translation]
-    C -->|Single File| D
-    C -->|Multiple Files| E[Batch Translation]
-
-    D --> F[Chunker]
-    E --> F
-
-    F -->|≤10k char chunks| G[OpenAI API]
-    G -->|Translated text| H[Session State]
-    H --> I[Side-by-Side Display]
-    I --> J[Download .txt / .zip]
-
-    subgraph Sidebar
-        K[API Key]
-        L[Target Language]
-        M[Model Selection]
-        N[File Upload]
-    end
-
-    Sidebar --> B
-```
-
-## Flow
-
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant S as Streamlit
-    participant O as OpenAI API
-
-    U->>S: Paste text or upload file(s)
-    U->>S: Select target language
-    U->>S: Click Translate
-
-    S->>S: Read & chunk text (10k chars)
-
-    loop Each chunk
-        S->>O: System prompt + chunk
-        O-->>S: Translated chunk
-    end
-
-    S->>S: Store in session_state
-    S-->>U: Show side-by-side result
-    U->>S: Download translation
-```
+- **Paste Text** — paste and translate with side-by-side view
+- **Upload Files** — upload one or multiple files (txt, json, csv, md, xml, html, yml, yaml, log, ini, cfg, tsv)
+- **Multi Text Blocks** — translate multiple text blocks at once
+- **Batch Folder** — point to a local folder and translate all supported files
+- **Google Translate** — free, no API key needed
+- **OpenAI GPT** — more accurate for mixed-language and structured content
+- **Auto language detection** — shows detected languages with confidence
+- **Copy to clipboard** — one-click copy on translated output
+- **Translation history** — last 5 translations saved in session
+- **Download** — single file or ZIP for batch results
 
 ## Setup
 
 ```bash
 uv init --no-readme
-uv add streamlit openai python-dotenv
+uv add streamlit openai python-dotenv deep-translator httpx urllib3 langdetect
 ```
 
-Create a `.env` file:
+## Configuration
+
+Create a `.env` file (optional, for OpenAI):
 
 ```
 OPENAI_API_KEY=sk-your-key-here
 ```
 
+Google Translate works without any API key.
+
 ## Run
 
 ```bash
-uv run streamlit run app.py
+uv run streamlit run Home.py
 ```
 
-## Features
+## Project Structure
 
-- Paste text or upload single/multiple files (json, txt, csv, md, xml, etc.)
-- Translates only foreign-language parts, keeps target-language text untouched
-- Side-by-side original vs translated view
-- Download as `.txt` or `.zip` (multi-file) with `_english_translated` naming
-- Persistent results across Streamlit reruns
-- Configurable model (gpt-4o-mini default, gpt-4o, gpt-3.5-turbo)
+```
+Home.py                       # Home page (entry point)
+pages/
+  1_Paste_Text.py             # Paste & translate
+  2_Upload_Files.py           # Upload file(s)
+  3_Multi_Text_Blocks.py      # Multi text blocks
+  4_Batch_Folder.py           # Batch folder translation
+utils/
+  config.py                   # Constants, languages, SSL config
+  translator.py               # OpenAI + Google translate logic
+  ui.py                       # UI components
+  sidebar.py                  # Sidebar with settings + history
+  history.py                  # Translation history
+```
