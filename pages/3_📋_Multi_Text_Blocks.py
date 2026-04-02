@@ -6,7 +6,6 @@ from utils.sidebar import render_sidebar
 from utils.translator import do_translate
 from utils.history import init_history, save_history
 
-st.set_page_config(page_title="Multi Text Blocks - This-to-That", layout="wide")
 apply_styles()
 init_history()
 

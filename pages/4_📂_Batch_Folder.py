@@ -6,7 +6,6 @@ from utils.sidebar import render_sidebar
 from utils.translator import do_translate
 from utils.history import init_history, save_history
 
-st.set_page_config(page_title="Batch Folder - This-to-That", layout="wide")
 apply_styles()
 init_history()
 
@@ -30,15 +29,26 @@ if folder_path and os.path.isdir(folder_path):
         if os.path.isfile(fpath) and os.path.splitext(fname)[1].lower() in SUPPORTED_EXTS:
             files_found.append((fname, fpath))
     st.info(f"Found {len(files_found)} file(s)")
-    for fname, _ in files_found[:20]:
-        st.caption(f"  {fname}")
-    if len(files_found) > 20:
-        st.caption(f"  ... and {len(files_found) - 20} more")
+    with st.expander("Show files", expanded=False):
+        for fname, _ in files_found[:20]:
+            st.caption(f"  {fname}")
+        if len(files_found) > 20:
+            st.caption(f"  ... and {len(files_found) - 20} more")
 elif folder_path:
     st.error("Folder not found. Check the path.")
 
 if st.session_state.folder_results and st.session_state.folder_path_used:
     st.success(f"Saved to: {st.session_state.folder_path_used}_translated")
+
+# --- Translate button (before preview) ---
+f1, f2, f3 = st.columns([1, 2, 1])
+with f2:
+    folder_translate = st.button("Translate Folder", type="primary", use_container_width=True)
+    if st.session_state.folder_results:
+        if st.button("Clear", use_container_width=True, key="clr_folder"):
+            st.session_state.folder_results = {}
+            st.session_state.folder_path_used = ""
+            st.rerun()
 
 left, right = st.columns(2, gap="medium")
 with left:
@@ -70,15 +80,6 @@ with right:
     else:
         st.markdown(f'<p class="panel-label">{target_lang.upper()} (OUTPUT)</p>', unsafe_allow_html=True)
         lined_text("", 220)
-
-f1, f2, f3 = st.columns([1, 2, 1])
-with f2:
-    folder_translate = st.button("Translate Folder", type="primary", use_container_width=True)
-    if st.session_state.folder_results:
-        if st.button("Clear", use_container_width=True, key="clr_folder"):
-            st.session_state.folder_results = {}
-            st.session_state.folder_path_used = ""
-            st.rerun()
 
 if folder_translate:
     if engine == "OpenAI" and not api_key:
