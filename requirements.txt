@@ -1,3 +1,7 @@
-streamlit==1.41.0
-openai==1.61.0
-python-dotenv==1.0.1
+streamlit>=1.41.0
+openai>=1.61.0
+python-dotenv>=1.0.1
+deep-translator>=1.11.4
+httpx>=0.28.1
+urllib3>=2.0.0
+langdetect>=1.0.9
