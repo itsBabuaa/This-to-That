@@ -29,6 +29,7 @@ st.divider()
 # --- Feature cards ---
 c1, c2 = st.columns(2, gap="medium")
 c3, c4 = st.columns(2, gap="medium")
+c5, _ = st.columns(2, gap="medium")
 
 with c1:
     with st.container(border=True):
@@ -53,6 +54,12 @@ with c4:
         st.subheader("📂 Batch Folder")
         st.write("Point to a local folder and translate every supported file. Output saved automatically.")
         st.page_link("pages/4_📂_Batch_Folder.py", label="Open →", use_container_width=True)
+
+with c5:
+    with st.container(border=True):
+        st.subheader("📊 Log Visualizer")
+        st.write("Upload JSON logs to extract tool call latency metrics, charts, and export as CSV.")
+        st.page_link("pages/5_📊_Log_Visualizer.py", label="Open →", use_container_width=True)
 
 st.markdown("")
 st.divider()
