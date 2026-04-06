@@ -35,11 +35,13 @@ with st.expander("How to read the results", expanded=False):
 
 tab_upload, tab_paste = st.tabs(["Upload Log File", "Paste JSON"])
 raw_json = None
+source_name = "log"
 
 with tab_upload:
     uploaded = st.file_uploader("Upload a JSON log file", type=["json"], key="log_upload")
     if uploaded:
         raw_json = uploaded.read().decode("utf-8")
+        source_name = uploaded.name.rsplit(".", 1)[0]
 
 with tab_paste:
     pasted = st.text_area("Paste JSON log data", height=200, key="log_paste",
@@ -249,12 +251,12 @@ if raw_json:
     with dl1:
         if not df_turns.empty:
             st.download_button("Download Turn Latency CSV",
-                               df_turns.to_csv(index=False),
-                               file_name="turn_latency.csv", mime="text/csv",
+                               df_turns.to_csv(index=False).encode("utf-8-sig"),
+                               file_name=f"{source_name}_turn_latency.csv", mime="text/csv",
                                use_container_width=True)
     with dl2:
         if not df_tools.empty:
             st.download_button("Download Tool Calls CSV",
-                               df_tools.to_csv(index=False),
-                               file_name="tool_calls.csv", mime="text/csv",
+                               df_tools.to_csv(index=False).encode("utf-8-sig"),
+                               file_name=f"{source_name}_tool_calls.csv", mime="text/csv",
                                use_container_width=True)
