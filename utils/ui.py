@@ -20,32 +20,18 @@ def apply_styles():
         }
         .app-subtitle { font-size: 13px; color: #888; margin: -10px 0 8px 0; }
         h2 { margin-bottom: 0 !important; padding-bottom: 0 !important; font-size: 22px !important; }
-        .lined-box {
-            background: #0e1117; border: 1px solid #333; border-radius: 8px;
-            padding: 10px 0; overflow: auto; font-family: 'Consolas','Monaco',monospace;
-            font-size: 13px; line-height: 1.6;
-        }
-        .lined-box table { border-collapse: collapse; width: 100%; }
-        .lined-box td { padding: 0 10px; vertical-align: top; white-space: pre-wrap; word-break: break-all; }
-        .lined-box .ln { color: #555; text-align: right; user-select: none; width: 1%;
-            white-space: nowrap; padding-right: 12px; border-right: 1px solid #333; }
-        .lined-box .code { color: #e0e0e0; padding-left: 12px; }
     </style>
     """, unsafe_allow_html=True)
 
 
+# Global counter for unique text_area keys
+_ta_counter = {"n": 0}
+
 def lined_text(text: str, height: int = 280):
-    if not text:
-        st.markdown(f'<div class="lined-box" style="height:{height}px;color:#555;padding:10px;">'
-                    'No content</div>', unsafe_allow_html=True)
-        return
-    lines = text.split("\n")
-    rows = ""
-    for i, line in enumerate(lines, 1):
-        escaped = html_mod.escape(line) if line else "&nbsp;"
-        rows += f'<tr><td class="ln">{i}</td><td class="code">{escaped}</td></tr>'
-    st.markdown(f'<div class="lined-box" style="max-height:{height}px;">'
-                f'<table>{rows}</table></div>', unsafe_allow_html=True)
+    _ta_counter["n"] += 1
+    st.text_area("output", value=text or "", height=height,
+                 label_visibility="collapsed", disabled=True,
+                 key=f"_lined_{_ta_counter['n']}")
 
 
 def output_header(label: str, text: str = "", key: str = ""):
